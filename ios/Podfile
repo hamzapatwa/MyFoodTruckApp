@@ -1,3 +1,6 @@
+# Add the main CocoaPods source repository
+source 'https://github.com/CocoaPods/Specs.git'
+
 # Resolve react_native_pods.rb with node to allow for hoisting
 require Pod::Executable.execute_command('node', ['-p',
   'require.resolve(
@@ -23,6 +26,12 @@ target 'MyFoodTruckApp' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  # WatermelonDB
+  pod 'WatermelonDB', :path => '../node_modules/@nozbe/watermelondb'
+  
+  # Local simdjson podspec
+  pod 'simdjson', :path => '.'
+
   post_install do |installer|
     # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
     react_native_post_install(
@@ -31,5 +40,16 @@ target 'MyFoodTruckApp' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+    
+    # Remove simdjson dependency from WatermelonDB
+    installer.pods_project.targets.each do |target|
+      if target.name == 'WatermelonDB'
+        target.build_configurations.each do |config|
+          # Add header search path to our manually added simdjson files
+          config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited)'
+          config.build_settings['HEADER_SEARCH_PATHS'] += ' "$(PROJECT_DIR)/../../simdjson-3.1.0/include"'
+        end
+      end
+    end
   end
 end
